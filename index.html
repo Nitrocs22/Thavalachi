@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Thavalachi" />
+  <meta name="theme-color" content="#1a3a1a" />
+  <link rel="manifest" href="manifest.json" />
+  <title>Thavalachi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --green-dark: #0d2b0d;
+      --green-mid: #1a4a1a;
+      --green-light: #2d7a2d;
+      --green-bright: #4caf50;
+      --green-glow: #7ecf7e;
+      --water: #0a1f3a;
+      --gold: #f5c842;
+      --cream: #f5f0dc;
+    }
+
+    html, body { width: 100%; height: 100%; overflow: hidden; background: var(--green-dark); font-family: 'Nunito', sans-serif; }
+
+    #app {
+      width: 100vw; height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      position: relative; overflow: hidden;
+      background: radial-gradient(ellipse at 50% 0%, #1e5c1e 0%, #0d2b0d 60%);
+    }
+
+    .bg-lily { position: absolute; border-radius: 50%; background: #2d7a2d; opacity: 0.1; pointer-events: none; }
+
+    #header { width: 100%; padding: 52px 24px 12px; text-align: center; position: relative; z-index: 2; }
+
+    #title { font-family: 'Lilita One', cursive; font-size: 36px; color: var(--green-glow); letter-spacing: 2px; text-shadow: 0 0 24px rgba(126,207,126,0.4); line-height: 1; }
+
+    #subtitle { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
+
+    #touch-area {
+      flex: 1; width: calc(100% - 32px); margin: 0 16px 12px;
+      border-radius: 24px; border: 1.5px solid rgba(76,175,80,0.25);
+      background: rgba(10,31,58,0.5);
+      position: relative; overflow: hidden;
+      touch-action: none;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    #touch-area::before {
+      content: ''; position: absolute; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(30,90,150,0.07) 28px, rgba(30,90,150,0.07) 29px);
+      pointer-events: none;
+    }
+
+    #instruction { text-align: center; pointer-events: none; z-index: 2; padding: 0 2rem; }
+
+    .frog-emoji-big { font-size: 56px; display: block; margin-bottom: 12px; animation: bob 2.4s ease-in-out infinite; }
+
+    @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+    #instruction p { font-size: 16px; color: rgba(255,255,255,0.5); line-height: 1.6; }
+
+    /* Rhyme word display */
+    #rhyme-display {
+      display: none;
+      position: absolute;
+      top: 16px; left: 0; right: 0;
+      text-align: center;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    #rhyme-word {
+      font-family: 'Lilita One', cursive;
+      font-size: 28px;
+      color: var(--green-glow);
+      text-shadow: 0 0 20px rgba(126,207,126,0.5);
+      display: inline-block;
+      animation: wordPop 0.25s ease-out;
+    }
+
+    @keyframes wordPop { 0%{transform:scale(1.4);opacity:0} 100%{transform:scale(1);opacity:1} }
+
+    #rhyme-line {
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+      margin-top: 2px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Finger dots */
+    .finger-dot {
+      position: absolute; width: 72px; height: 72px; border-radius: 50%;
+      transform: translate(-50%, -50%);
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none; z-index: 5;
+      transition: opacity 0.3s, transform 0.35s;
+    }
+
+    .finger-dot .inner {
+      width: 100%; height: 100%; border-radius: 50%;
+      background: rgba(76,175,80,0.15);
+      border: 2px solid rgba(76,175,80,0.5);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 700;
+      transition: background 0.2s, border-color 0.2s, font-size 0.2s;
+    }
+
+    .finger-dot .ripple {
+      position: absolute; width: 100%; height: 100%; border-radius: 50%;
+      border: 1.5px solid rgba(76,175,80,0.35);
+      animation: ripple-out 1.4s ease-out infinite;
+    }
+    .finger-dot .ripple2 { animation-delay: 0.5s; }
+
+    @keyframes ripple-out { 0%{transform:scale(1);opacity:0.5} 100%{transform:scale(2.4);opacity:0} }
+
+    /* Active (currently pointed at) */
+    .finger-dot.active .inner {
+      background: rgba(76,175,80,0.45);
+      border-color: var(--green-glow);
+      font-size: 18px;
+      color: white;
+      transform: scale(1.1);
+    }
+
+    /* Winner */
+    .finger-dot.winner { transform: translate(-50%, -50%) scale(1.45) !important; z-index: 20; }
+    .finger-dot.winner .inner {
+      background: var(--green-bright); border-color: var(--green-glow);
+      font-size: 30px; color: white;
+      animation: winner-bounce 0.5s cubic-bezier(0.36,0.07,0.19,0.97);
+    }
+    @keyframes winner-bounce { 0%{transform:scale(0.4)} 60%{transform:scale(1.25)} 100%{transform:scale(1)} }
+
+    /* Loser */
+    .finger-dot.loser { opacity: 0.15; transform: translate(-50%, -50%) scale(0.8) !important; }
+
+    /* Confetti frogs */
+    .confetti-frog {
+      position: absolute; pointer-events: none; z-index: 30;
+      animation: frogFall linear forwards;
+    }
+    @keyframes frogFall { 0%{transform:translateY(-60px) rotate(0deg);opacity:1} 80%{opacity:1} 100%{transform:translateY(110vh) rotate(720deg);opacity:0} }
+
+    #result-msg {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      font-family: 'Lilita One', cursive; font-size: 20px; color: var(--green-glow);
+      white-space: nowrap; display: none; z-index: 20;
+      text-shadow: 0 0 16px rgba(126,207,126,0.5);
+      animation: fadeUp 0.4s ease-out;
+    }
+    @keyframes fadeUp { 0%{transform:translate(-50%,20px);opacity:0} 100%{transform:translate(-50%,0);opacity:1} }
+
+    #reset-btn {
+      display: none; margin: 0 16px 28px; width: calc(100% - 32px);
+      padding: 16px; border-radius: 16px; border: none;
+      background: var(--green-light); color: white;
+      font-family: 'Lilita One', cursive; font-size: 20px; letter-spacing: 1px;
+      cursor: pointer; position: relative; z-index: 10;
+    }
+    #reset-btn:active { transform: scale(0.97); background: var(--green-bright); }
+
+    #finger-count {
+      position: absolute; top: 12px; right: 14px;
+      background: rgba(76,175,80,0.12); border: 1px solid rgba(76,175,80,0.25);
+      border-radius: 20px; padding: 4px 12px;
+      font-size: 12px; color: rgba(255,255,255,0.45);
+      display: none; z-index: 10;
+    }
+
+    #hold-hint {
+      position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+      font-size: 12px; color: rgba(255,255,255,0.3);
+      white-space: nowrap; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="bg-lily" style="width:200px;height:200px;top:-60px;left:-80px;"></div>
+  <div class="bg-lily" style="width:140px;height:140px;bottom:80px;right:-40px;"></div>
+  <div class="bg-lily" style="width:80px;height:80px;bottom:200px;left:20px;"></div>
+
+  <div id="header">
+    <div id="title">🐸 Thavalachi</div>
+    <div id="subtitle">athala pithala thavalachi</div>
+  </div>
+
+  <div id="touch-area">
+    <div id="finger-count"></div>
+
+    <div id="rhyme-display">
+      <div id="rhyme-word"></div>
+      <div id="rhyme-line"></div>
+    </div>
+
+    <div id="instruction">
+      <span class="frog-emoji-big">🐸</span>
+      <p>Everyone place a finger<br>on the pond and hold still</p>
+    </div>
+
+    <div id="result-msg"></div>
+    <div id="hold-hint"></div>
+  </div>
+
+  <button id="reset-btn" onclick="reset()">🔄 Ribbit Again</button>
+</div>
+
+<script>
+const touchArea = document.getElementById('touch-area');
+const instruction = document.getElementById('instruction');
+const rhymeDisplay = document.getElementById('rhyme-display');
+const rhymeWord = document.getElementById('rhyme-word');
+const rhymeLine = document.getElementById('rhyme-line');
+const resultMsg = document.getElementById('result-msg');
+const resetBtn = document.getElementById('reset-btn');
+const fingerCount = document.getElementById('finger-count');
+const holdHint = document.getElementById('hold-hint');
+
+// The rhyme split into words with line labels
+const RHYME = [
+  { word: 'athala',    line: 'അതല' },
+  { word: 'pithala',   line: 'പിതല' },
+  { word: 'thavalachi',line: 'തവളച്ചി' },
+  { word: 'chukku',    line: 'ചുക്ക്' },
+  { word: 'melirikkana',line: 'മേലിരിക്കന' },
+  { word: 'choolaappu',line: 'ചൂലാപ്പ്' },
+  { word: 'mariyam',   line: 'മറിയം' },
+  { word: 'vannu',     line: 'വന്നു' },
+  { word: 'vilakkoothi',line: 'വിളക്കൂതി' },
+  { word: 'gundu',     line: 'ഗുണ്ട്' },
+  { word: 'saaraa',    line: 'സാറ' },
+  { word: 'mani',      line: 'മണി' },
+  { word: 'go',        line: '✨' },
+];
+
+let dots = {};
+let phase = 'waiting'; // waiting | holding | chanting | done
+let holdTimer = null;
+let chantTimer = null;
+let audioCtx = null;
+let wordIndex = 0;
+let fingerOrder = [];
+
+function audio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function beep(freq, dur, vol=0.12, type='sine') {
+  try {
+    const ctx = audio();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    o.start(); o.stop(ctx.currentTime + dur);
+  } catch(e){}
+}
+
+function playWin() {
+  [[523,0],[659,0.13],[784,0.26],[1047,0.42]].forEach(([f,t]) => {
+    setTimeout(() => beep(f, 0.3, 0.15), t * 1000);
+  });
+}
+
+function getPos(touch) {
+  const r = touchArea.getBoundingClientRect();
+  return { x: touch.clientX - r.left, y: touch.clientY - r.top };
+}
+
+function makeDot(id, pos) {
+  const el = document.createElement('div');
+  el.className = 'finger-dot';
+  el.id = 'dot-' + id;
+  el.innerHTML = `<div class="ripple"></div><div class="ripple ripple2"></div><div class="inner">🐸</div>`;
+  touchArea.appendChild(el);
+  dots[id] = { el };
+  moveDot(id, pos);
+  fingerOrder.push(id);
+}
+
+function moveDot(id, pos) {
+  if (!dots[id]) return;
+  dots[id].el.style.left = pos.x + 'px';
+  dots[id].el.style.top = pos.y + 'px';
+}
+
+function removeDot(id) {
+  if (dots[id]) { dots[id].el.remove(); delete dots[id]; }
+  fingerOrder = fingerOrder.filter(i => i !== id);
+}
+
+function clearAll() {
+  Object.keys(dots).forEach(id => { dots[id].el.remove(); delete dots[id]; });
+  fingerOrder = [];
+}
+
+function updateCount() {
+  const n = Object.keys(dots).length;
+  if (n === 0) { fingerCount.style.display = 'none'; holdHint.textContent = ''; return; }
+  fingerCount.style.display = 'block';
+  fingerCount.textContent = `🐸 ${n} finger${n===1?'':'s'}`;
+  if (phase === 'holding') holdHint.textContent = 'hold still...';
+}
+
+function setActive(id) {
+  Object.keys(dots).forEach(d => dots[d].el.classList.remove('active'));
+  if (id && dots[id]) dots[id].el.classList.add('active');
+}
+
+function startChanting() {
+  if (phase !== 'holding') return;
+  const ids = Object.keys(dots);
+  if (ids.length < 1) return;
+
+  phase = 'chanting';
+  holdHint.textContent = '';
+  instruction.style.display = 'none';
+  rhymeDisplay.style.display = 'block';
+  wordIndex = 0;
+
+  // Shuffle starting finger
+  let currentFingerIndex = Math.floor(Math.random() * ids.length);
+
+  function nextWord() {
+    if (phase !== 'chanting') return;
+
+    const ids = Object.keys(dots);
+    if (ids.length === 0) { reset(); return; }
+
+    // wrap finger index if fingers changed
+    currentFingerIndex = currentFingerIndex % ids.length;
+    const currentId = ids[currentFingerIndex];
+
+    const entry = RHYME[wordIndex];
+    rhymeWord.textContent = entry.word;
+    rhymeLine.textContent = entry.line;
+
+    // reset animation
+    rhymeWord.style.animation = 'none';
+    void rhymeWord.offsetWidth;
+    rhymeWord.style.animation = 'wordPop 0.25s ease-out';
+
+    setActive(currentId);
+    beep(wordIndex === RHYME.length - 1 ? 880 : 330 + (wordIndex % 3) * 40, 0.12);
+
+    if (wordIndex === RHYME.length - 1) {
+      // "go" — this finger wins!
+      setTimeout(() => pickWinner(currentId), 500);
+      return;
+    }
+
+    wordIndex++;
+    currentFingerIndex = (currentFingerIndex + 1) % ids.length;
+
+    // speed up slightly as rhyme progresses — starts at 420ms, ends around 280ms
+    const delay = Math.max(280, 420 - wordIndex * 12);
+    chantTimer = setTimeout(nextWord, delay);
+  }
+
+  nextWord();
+}
+
+function pickWinner(winnerId) {
+  phase = 'done';
+  rhymeDisplay.style.display = 'none';
+
+  const ids = Object.keys(dots);
+  ids.forEach(id => {
+    dots[id].el.querySelectorAll('.ripple').forEach(r => r.remove());
+    if (id === winnerId) {
+      dots[id].el.classList.remove('active');
+      dots[id].el.classList.add('winner');
+      dots[id].el.querySelector('.inner').textContent = '🐸';
+    } else {
+      dots[id].el.classList.remove('active');
+      dots[id].el.classList.add('loser');
+    }
+  });
+
+  playWin();
+  spawnFrogs();
+  resultMsg.style.display = 'block';
+  resultMsg.textContent = ids.length === 1 ? '🐸 The lonely frog wins!' : '🐸 Go! Chosen one!';
+  fingerCount.style.display = 'none';
+  resetBtn.style.display = 'block';
+}
+
+function spawnFrogs() {
+  for (let i = 0; i < 14; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-frog';
+      el.textContent = '🐸';
+      el.style.left = Math.random() * 95 + '%';
+      el.style.top = '-40px';
+      el.style.fontSize = (18 + Math.random() * 22) + 'px';
+      const dur = 1.8 + Math.random() * 1.4;
+      el.style.animationDuration = dur + 's';
+      document.getElementById('app').appendChild(el);
+      setTimeout(() => el.remove(), dur * 1000 + 100);
+    }, i * 70);
+  }
+}
+
+function reset() {
+  clearTimeout(holdTimer);
+  clearTimeout(chantTimer);
+  clearAll();
+  phase = 'waiting';
+  wordIndex = 0;
+  instruction.style.display = 'flex';
+  rhymeDisplay.style.display = 'none';
+  resultMsg.style.display = 'none';
+  resetBtn.style.display = 'none';
+  fingerCount.style.display = 'none';
+  holdHint.textContent = '';
+  document.querySelectorAll('.confetti-frog').forEach(e => e.remove());
+}
+
+// Touch handlers
+touchArea.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (phase === 'done') return;
+  if (phase === 'chanting') return; // lock during chant
+
+  Array.from(e.changedTouches).forEach(t => {
+    if (!dots[t.identifier]) makeDot(t.identifier, getPos(t));
+  });
+  updateCount();
+
+  if (phase === 'waiting' || phase === 'holding') {
+    phase = 'holding';
+    clearTimeout(holdTimer);
+    holdHint.textContent = 'hold still...';
+    holdTimer = setTimeout(() => {
+      if (phase === 'holding' && Object.keys(dots).length >= 1) startChanting();
+    }, 700);
+  }
+}, { passive: false });
+
+touchArea.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (phase === 'done' || phase === 'chanting') return;
+  Array.from(e.changedTouches).forEach(t => moveDot(t.identifier, getPos(t)));
+}, { passive: false });
+
+touchArea.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (phase === 'done' || phase === 'chanting') return;
+  clearTimeout(holdTimer);
+  Array.from(e.changedTouches).forEach(t => removeDot(t.identifier));
+  updateCount();
+  if (Object.keys(dots).length === 0) {
+    phase = 'waiting';
+    holdHint.textContent = '';
+  } else {
+    holdTimer = setTimeout(() => {
+      if (phase === 'holding' && Object.keys(dots).length >= 1) startChanting();
+    }, 700);
+  }
+}, { passive: false });
+
+touchArea.addEventListener('touchcancel', e => {
+  e.preventDefault();
+  Array.from(e.changedTouches).forEach(t => removeDot(t.identifier));
+  updateCount();
+}, { passive: false });
+</script>
+
+<script>if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");</script>
+</body>
+</html>
