@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="തവളച്ചി" />
+  <meta name="theme-color" content="#1a3a1a" />
+  <link rel="manifest" href="manifest.json" />
+  <title>തവളച്ചി</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box; margin: 0; padding: 0;
+      user-select: none; -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --g-dark: #071a07;
+      --g-mid: #0f2e0f;
+      --g-pond: #0a1f3a;
+      --g-bright: #4caf50;
+      --g-glow: #7ecf7e;
+      --g-light: #2d7a2d;
+      --gold: #f5c842;
+      --white: rgba(255,255,255,0.85);
+      --muted: rgba(255,255,255,0.4);
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: var(--g-dark);
+      font-family: 'Noto Sans Malayalam', sans-serif;
+    }
+
+    #app {
+      width: 100vw; height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center;
+      position: relative; overflow: hidden;
+      background: radial-gradient(ellipse at 50% 10%, #1e5c1e 0%, #071a07 65%);
+    }
+
+    /* Animated water lines */
+    #water-bg {
+      position: absolute; inset: 0; pointer-events: none; z-index: 0;
+      overflow: hidden;
+    }
+    .water-line {
+      position: absolute; left: 0; right: 0; height: 1px;
+      background: rgba(30,90,150,0.12);
+      animation: waterMove linear infinite;
+    }
+    @keyframes waterMove {
+      0% { transform: translateX(-5%) scaleX(1.1); }
+      50% { transform: translateX(3%) scaleX(0.97); }
+      100% { transform: translateX(-5%) scaleX(1.1); }
+    }
+
+    /* Lily pads */
+    .lily {
+      position: absolute; border-radius: 50%;
+      background: #1e5c1e; opacity: 0.18; pointer-events: none; z-index: 0;
+    }
+
+    /* ---- HEADER ---- */
+    #header {
+      width: 100%; padding: 48px 20px 10px;
+      text-align: center; position: relative; z-index: 2;
+    }
+    #title {
+      font-size: 40px; font-weight: 900;
+      color: var(--g-glow);
+      text-shadow: 0 0 28px rgba(126,207,126,0.45);
+      line-height: 1;
+      letter-spacing: 1px;
+    }
+    #subtitle {
+      font-size: 13px; color: var(--muted);
+      margin-top: 5px; letter-spacing: 0.5px;
+    }
+
+    /* ---- TOUCH AREA ---- */
+    #touch-area {
+      flex: 1; width: calc(100% - 28px);
+      margin: 8px 14px 10px;
+      border-radius: 26px;
+      border: 1.5px solid rgba(76,175,80,0.2);
+      background: rgba(8,24,50,0.55);
+      position: relative; overflow: hidden;
+      touch-action: none;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2;
+    }
+
+    /* ---- INSTRUCTION ---- */
+    #instruction {
+      text-align: center; pointer-events: none;
+      z-index: 3; padding: 0 1.5rem;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    #frog-idle {
+      font-size: 60px; margin-bottom: 14px;
+      animation: bob 2.5s ease-in-out infinite;
+    }
+    @keyframes bob { 0%,100%{transform:translateY(0) rotate(-3deg)} 50%{transform:translateY(-10px) rotate(3deg)} }
+    #instruction p { font-size: 16px; color: var(--muted); line-height: 1.7; }
+
+    /* ---- RHYME DISPLAY ---- */
+    #rhyme-box {
+      display: none; position: absolute;
+      top: 0; left: 0; right: 0;
+      padding: 14px 16px 10px;
+      text-align: center; z-index: 20; pointer-events: none;
+      background: linear-gradient(to bottom, rgba(8,24,50,0.8) 70%, transparent);
+      border-radius: 26px 26px 0 0;
+    }
+    #rhyme-word {
+      font-size: 34px; font-weight: 900;
+      color: var(--g-glow);
+      text-shadow: 0 0 22px rgba(126,207,126,0.55);
+      display: inline-block;
+      animation: wordPop 0.2s ease-out;
+    }
+    @keyframes wordPop {
+      0% { transform: scale(1.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    #rhyme-transliteration {
+      font-size: 12px; color: rgba(255,255,255,0.28);
+      margin-top: 2px; letter-spacing: 0.5px;
+    }
+
+    /* progress dots */
+    #rhyme-progress {
+      display: flex; gap: 5px; justify-content: center;
+      margin-top: 8px; flex-wrap: wrap; padding: 0 20px;
+    }
+    .prog-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      transition: background 0.2s;
+    }
+    .prog-dot.done { background: var(--g-bright); }
+    .prog-dot.current { background: var(--g-glow); transform: scale(1.4); }
+
+    /* ---- FINGER DOTS ---- */
+    .finger-dot {
+      position: absolute; width: 76px; height: 76px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none; z-index: 5;
+      transition: opacity 0.3s;
+    }
+    .finger-dot .inner {
+      width: 100%; height: 100%; border-radius: 50%;
+      background: rgba(76,175,80,0.14);
+      border: 2px solid rgba(76,175,80,0.45);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s;
+    }
+    .finger-dot .ring {
+      position: absolute; inset: -6px; border-radius: 50%;
+      border: 1.5px solid rgba(76,175,80,0.25);
+      animation: ringPulse 1.6s ease-out infinite;
+    }
+    .finger-dot .ring2 { animation-delay: 0.6s; }
+    @keyframes ringPulse { 0%{transform:scale(1);opacity:0.5} 100%{transform:scale(1.8);opacity:0} }
+
+    /* active — currently pointed at */
+    .finger-dot.active .inner {
+      background: rgba(76,175,80,0.5);
+      border-color: var(--g-glow);
+      transform: scale(1.15);
+      box-shadow: 0 0 20px rgba(126,207,126,0.4);
+    }
+    .finger-dot.active .ring { border-color: rgba(126,207,126,0.5); }
+
+    /* winner */
+    .finger-dot.winner {
+      transform: translate(-50%,-50%) scale(1.5) !important;
+      z-index: 25;
+      transition: transform 0.35s cubic-bezier(0.36,0.07,0.19,0.97);
+    }
+    .finger-dot.winner .inner {
+      background: var(--g-bright);
+      border-color: var(--g-glow);
+      font-size: 34px;
+      box-shadow: 0 0 30px rgba(76,175,80,0.7);
+      animation: winnerPop 0.45s cubic-bezier(0.36,0.07,0.19,0.97);
+    }
+    @keyframes winnerPop { 0%{transform:scale(0.3)} 65%{transform:scale(1.2)} 100%{transform:scale(1)} }
+
+    /* loser */
+    .finger-dot.loser {
+      opacity: 0.12;
+      transform: translate(-50%,-50%) scale(0.75) !important;
+      transition: all 0.3s;
+    }
+
+    /* ---- RESULT ---- */
+    #result-msg {
+      display: none; position: absolute;
+      bottom: 18px; left: 50%; transform: translateX(-50%);
+      font-size: 22px; font-weight: 900;
+      color: var(--g-glow); white-space: nowrap;
+      text-shadow: 0 0 18px rgba(126,207,126,0.5);
+      z-index: 30;
+      animation: fadeUp 0.4s ease-out;
+    }
+    @keyframes fadeUp { 0%{transform:translate(-50%,18px);opacity:0} 100%{transform:translate(-50%,0);opacity:1} }
+
+    /* confetti frogs */
+    .cfrog {
+      position: absolute; pointer-events: none; z-index: 40;
+      animation: cfrogFall linear forwards;
+    }
+    @keyframes cfrogFall {
+      0%{transform:translateY(-50px) rotate(0deg) scale(1);opacity:1}
+      80%{opacity:1}
+      100%{transform:translateY(105vh) rotate(540deg) scale(0.5);opacity:0}
+    }
+
+    /* ---- BOTTOM BAR ---- */
+    #bottom-bar {
+      width: 100%; padding: 0 14px 28px;
+      display: flex; flex-direction: column; gap: 8px;
+      position: relative; z-index: 2;
+    }
+    #finger-count {
+      text-align: center; font-size: 13px;
+      color: var(--muted); min-height: 18px;
+    }
+    #reset-btn {
+      display: none; width: 100%;
+      padding: 16px; border-radius: 18px; border: none;
+      background: var(--g-light); color: white;
+      font-family: 'Noto Sans Malayalam', sans-serif;
+      font-size: 20px; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.5px;
+    }
+    #reset-btn:active { transform: scale(0.97); background: var(--g-bright); }
+    #hold-hint {
+      text-align: center; font-size: 13px;
+      color: rgba(255,255,255,0.25); min-height: 18px;
+      animation: hintBlink 1.2s ease-in-out infinite;
+    }
+    @keyframes hintBlink { 0%,100%{opacity:0.5} 50%{opacity:1} }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- water bg lines -->
+  <div id="water-bg"></div>
+
+  <!-- lily pads -->
+  <div class="lily" style="width:180px;height:180px;top:-70px;left:-70px;"></div>
+  <div class="lily" style="width:120px;height:120px;bottom:100px;right:-30px;"></div>
+  <div class="lily" style="width:70px;height:70px;bottom:220px;left:10px;"></div>
+
+  <div id="header">
+    <div id="title">🐸 തവളച്ചി</div>
+    <div id="subtitle">അതല പിതല തവളച്ചി...</div>
+  </div>
+
+  <div id="touch-area">
+
+    <div id="rhyme-box">
+      <div id="rhyme-word"></div>
+      <div id="rhyme-transliteration"></div>
+      <div id="rhyme-progress"></div>
+    </div>
+
+    <div id="instruction">
+      <div id="frog-idle">🐸</div>
+      <p>എല്ലാവരും വിരൽ വയ്ക്കൂ<br>അനങ്ങാതെ നിൽക്കൂ</p>
+    </div>
+
+    <div id="result-msg"></div>
+  </div>
+
+  <div id="bottom-bar">
+    <div id="finger-count"></div>
+    <div id="hold-hint"></div>
+    <button id="reset-btn" onclick="reset()">🔄 വീണ്ടും കളിക്കൂ</button>
+  </div>
+
+</div>
+<script>
+// ---- Water background lines ----
+const wb = document.getElementById('water-bg');
+for (let i = 0; i < 18; i++) {
+  const d = document.createElement('div');
+  d.className = 'water-line';
+  d.style.top = (i * 5.5 + 2) + '%';
+  d.style.animationDuration = (6 + Math.random() * 8) + 's';
+  d.style.animationDelay = (-Math.random() * 8) + 's';
+  wb.appendChild(d);
+}
+
+// ---- Rhyme data ----
+const RHYME = [
+  { ml: 'അതല',       en: 'athala' },
+  { ml: 'പിതല',      en: 'pithala' },
+  { ml: 'തവളച്ചി',   en: 'thavalachi' },
+  { ml: 'ചുക്ക്',    en: 'chukku' },
+  { ml: 'മേലിരിക്കന',en: 'melirikkana' },
+  { ml: 'ചൂലാപ്പ്',  en: 'choolaappu' },
+  { ml: 'മറിയം',     en: 'mariyam' },
+  { ml: 'വന്നു',     en: 'vannu' },
+  { ml: 'വിളക്കൂതി', en: 'vilakkoothi' },
+  { ml: 'ഗുണ്ട്',    en: 'gundu' },
+  { ml: 'സാറ',       en: 'saaraa' },
+  { ml: 'മണി',       en: 'mani' },
+  { ml: 'ഗോ!',       en: 'go!' },
+];
+
+// ---- Build progress dots ----
+const progressEl = document.getElementById('rhyme-progress');
+RHYME.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'prog-dot';
+  d.id = 'pd-' + i;
+  progressEl.appendChild(d);
+});
+
+// ---- Audio engine ----
+let audioCtx = null;
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+// Musical scale notes for the rhyme (pentatonic feel)
+const NOTE_FREQS = [330, 370, 415, 440, 494, 523, 587, 659, 740, 784, 880, 988, 1047];
+
+function playNote(freq, time, dur=0.13, vol=0.14, type='triangle') {
+  try {
+    const ctx = getCtx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    const t = time || ctx.currentTime;
+    o.connect(g); g.connect(ctx.destination);
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.start(t); o.stop(t + dur + 0.05);
+  } catch(e){}
+}
+
+function playWordBeep(idx, isLast) {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+  if (isLast) {
+    // Fanfare on "go"
+    [523, 659, 784, 1047].forEach((f, i) => playNote(f, now + i * 0.08, 0.25, 0.16, 'sine'));
+  } else {
+    // Rhythmic melody following the rhyme
+    const freq = NOTE_FREQS[idx % NOTE_FREQS.length];
+    playNote(freq, now, 0.12, 0.13, 'triangle');
+    // subtle bass hit
+    playNote(freq / 2, now, 0.08, 0.06, 'sine');
+  }
+}
+
+function playWinJingle() {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+  const melody = [523, 659, 784, 659, 784, 1047];
+  melody.forEach((f, i) => playNote(f, now + i * 0.13, 0.22, 0.15, 'sine'));
+}
+
+// ---- Ambient pond loop ----
+let ambientNode = null;
+function startAmbient() {
+  try {
+    const ctx = getCtx();
+    // Low hum
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine'; o.frequency.value = 80;
+    g.gain.value = 0.03;
+    o.start();
+    ambientNode = { o, g };
+  } catch(e){}
+}
+function stopAmbient() {
+  if (ambientNode) {
+    try { ambientNode.g.gain.value = 0; ambientNode.o.stop(); } catch(e){}
+    ambientNode = null;
+  }
+}
+
+// ---- State ----
+let dots = {};
+let fingerOrder = [];
+let phase = 'waiting'; // waiting | holding | chanting | done
+let holdTimer = null;
+let chantTimer = null;
+
+const touchArea   = document.getElementById('touch-area');
+const instruction = document.getElementById('instruction');
+const rhymeBox    = document.getElementById('rhyme-box');
+const rhymeWordEl = document.getElementById('rhyme-word');
+const rhymeTransEl= document.getElementById('rhyme-transliteration');
+const resultMsg   = document.getElementById('result-msg');
+const resetBtn    = document.getElementById('reset-btn');
+const fingerCountEl = document.getElementById('finger-count');
+const holdHint    = document.getElementById('hold-hint');
+
+// ---- Helpers ----
+function getPos(touch) {
+  const r = touchArea.getBoundingClientRect();
+  return { x: touch.clientX - r.left, y: touch.clientY - r.top };
+}
+
+function makeDot(id, pos) {
+  const el = document.createElement('div');
+  el.className = 'finger-dot';
+  el.id = 'dot-' + id;
+  el.innerHTML = `<div class="ring"></div><div class="ring ring2"></div><div class="inner">🐸</div>`;
+  touchArea.appendChild(el);
+  dots[id] = { el };
+  fingerOrder.push(String(id));
+  moveDot(id, pos);
+}
+
+function moveDot(id, pos) {
+  if (!dots[id]) return;
+  dots[id].el.style.left = pos.x + 'px';
+  dots[id].el.style.top = pos.y + 'px';
+}
+
+function removeDot(id) {
+  if (dots[id]) { dots[id].el.remove(); delete dots[id]; }
+  fingerOrder = fingerOrder.filter(i => i !== String(id));
+}
+
+function clearAll() {
+  Object.keys(dots).forEach(id => { dots[id].el.remove(); delete dots[id]; });
+  fingerOrder = [];
+}
+
+function setActive(id) {
+  Object.keys(dots).forEach(d => dots[d].el.classList.remove('active'));
+  if (id != null && dots[id]) dots[id].el.classList.add('active');
+}
+
+function updateCount() {
+  const n = Object.keys(dots).length;
+  fingerCountEl.textContent = n > 0 ? `🐸 ${n} വിരൽ${n > 1 ? 'കൾ' : ''}` : '';
+}
+
+function updateProgress(idx) {
+  RHYME.forEach((_, i) => {
+    const d = document.getElementById('pd-' + i);
+    if (!d) return;
+    d.className = 'prog-dot' + (i < idx ? ' done' : i === idx ? ' current' : '');
+  });
+}
+
+// ---- Chanting ----
+function startChanting() {
+  if (phase !== 'holding') return;
+  const ids = Object.keys(dots);
+  if (ids.length < 1) return;
+
+  phase = 'chanting';
+  holdHint.textContent = '';
+  instruction.style.display = 'none';
+  rhymeBox.style.display = 'block';
+  startAmbient();
+
+  let wordIdx = 0;
+  let fingerIdx = Math.floor(Math.random() * ids.length);
+
+  function nextWord() {
+    if (phase !== 'chanting') return;
+    const currentIds = Object.keys(dots);
+    if (currentIds.length === 0) { reset(); return; }
+
+    fingerIdx = fingerIdx % currentIds.length;
+    const currentId = currentIds[fingerIdx];
+    const entry = RHYME[wordIdx];
+    const isLast = wordIdx === RHYME.length - 1;
+
+    // Update word display
+    rhymeWordEl.textContent = entry.ml;
+    rhymeTransEl.textContent = entry.en;
+    rhymeWordEl.style.animation = 'none';
+    void rhymeWordEl.offsetWidth;
+    rhymeWordEl.style.animation = 'wordPop 0.2s ease-out';
+
+    updateProgress(wordIdx);
+    setActive(currentId);
+    playWordBeep(wordIdx, isLast);
+
+    if (isLast) {
+      setTimeout(() => pickWinner(currentId), 600);
+      return;
+    }
+
+    wordIdx++;
+    fingerIdx = (fingerIdx + 1) % currentIds.length;
+
+    // Accelerate slightly through the rhyme
+    const delay = Math.max(260, 430 - wordIdx * 14);
+    chantTimer = setTimeout(nextWord, delay);
+  }
+
+  nextWord();
+}
+
+// ---- Pick winner ----
+function pickWinner(winnerId) {
+  phase = 'done';
+  stopAmbient();
+  rhymeBox.style.display = 'none';
+  updateProgress(RHYME.length);
+
+  const ids = Object.keys(dots);
+  ids.forEach(id => {
+    dots[id].el.querySelectorAll('.ring').forEach(r => r.remove());
+    dots[id].el.classList.remove('active');
+    if (id === winnerId) {
+      dots[id].el.classList.add('winner');
+      dots[id].el.querySelector('.inner').textContent = '🏆';
+    } else {
+      dots[id].el.classList.add('loser');
+    }
+  });
+
+  playWinJingle();
+  spawnFrogs();
+  resultMsg.style.display = 'block';
+  resultMsg.textContent = ids.length === 1 ? '🐸 ഒറ്റ തവള ജയിച്ചു!' : '🐸 ഗോ! ഇവൻ/ഇവൾ തിരഞ്ഞെടുക്കപ്പെട്ടു!';
+  fingerCountEl.textContent = '';
+  resetBtn.style.display = 'block';
+}
+
+function spawnFrogs() {
+  for (let i = 0; i < 16; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'cfrog';
+      el.textContent = ['🐸','🐸','🐸','🌿','💧'][Math.floor(Math.random()*5)];
+      el.style.left = Math.random() * 94 + '%';
+      el.style.top = '-40px';
+      el.style.fontSize = (16 + Math.random() * 24) + 'px';
+      const dur = 1.6 + Math.random() * 1.6;
+      el.style.animationDuration = dur + 's';
+      document.getElementById('app').appendChild(el);
+      setTimeout(() => el.remove(), dur * 1000 + 200);
+    }, i * 65);
+  }
+}
+
+// ---- Reset ----
+function reset() {
+  clearTimeout(holdTimer);
+  clearTimeout(chantTimer);
+  stopAmbient();
+  clearAll();
+  phase = 'waiting';
+  instruction.style.display = 'flex';
+  rhymeBox.style.display = 'none';
+  resultMsg.style.display = 'none';
+  resetBtn.style.display = 'none';
+  fingerCountEl.textContent = '';
+  holdHint.textContent = '';
+  updateProgress(-1);
+  document.querySelectorAll('.cfrog').forEach(e => e.remove());
+}
+
+// ---- Touch events ----
+touchArea.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (phase === 'done') return;
+  if (phase === 'chanting') {
+    // Allow new fingers during chant — just add them
+    Array.from(e.changedTouches).forEach(t => {
+      if (!dots[t.identifier]) makeDot(t.identifier, getPos(t));
+    });
+    return;
+  }
+
+  Array.from(e.changedTouches).forEach(t => {
+    if (!dots[t.identifier]) makeDot(t.identifier, getPos(t));
+  });
+  updateCount();
+
+  phase = 'holding';
+  clearTimeout(holdTimer);
+  holdHint.textContent = 'അനങ്ങാതെ നിൽക്കൂ...';
+  holdTimer = setTimeout(() => {
+    if (phase === 'holding' && Object.keys(dots).length >= 1) startChanting();
+  }, 700);
+}, { passive: false });
+
+touchArea.addEventListener('touchmove', e => {
+  e.preventDefault();
+  // Always track finger movement regardless of phase
+  Array.from(e.changedTouches).forEach(t => moveDot(t.identifier, getPos(t)));
+}, { passive: false });
+
+touchArea.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (phase === 'done') return;
+  if (phase === 'chanting') {
+    // remove finger but keep going
+    Array.from(e.changedTouches).forEach(t => removeDot(t.identifier));
+    if (Object.keys(dots).length === 0) { reset(); }
+    return;
+  }
+  clearTimeout(holdTimer);
+  Array.from(e.changedTouches).forEach(t => removeDot(t.identifier));
+  updateCount();
+  if (Object.keys(dots).length === 0) {
+    phase = 'waiting';
+    holdHint.textContent = '';
+  } else {
+    holdTimer = setTimeout(() => {
+      if (phase === 'holding' && Object.keys(dots).length >= 1) startChanting();
+    }, 700);
+  }
+}, { passive: false });
+
+touchArea.addEventListener('touchcancel', e => {
+  e.preventDefault();
+  Array.from(e.changedTouches).forEach(t => removeDot(t.identifier));
+  updateCount();
+}, { passive: false });
+</script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+</body>
+</html>
