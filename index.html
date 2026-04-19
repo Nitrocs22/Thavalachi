@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="തവളച്ചി" />
+  <meta name="theme-color" content="#0a1f0a" />
+  <link rel="manifest" href="manifest.json" />
+  <title>തവളച്ചി</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing:border-box; margin:0; padding:0;
+      user-select:none; -webkit-user-select:none;
+      -webkit-tap-highlight-color:transparent;
+    }
+    :root {
+      --dark:#060f06;
+      --green:#3a8c3a;
+      --glow:#6ec96e;
+      --bright:#4caf50;
+      --muted:rgba(255,255,255,0.32);
+    }
+    html,body { width:100%; height:100%; overflow:hidden; background:var(--dark); font-family:'Noto Sans Malayalam',sans-serif; }
+
+    #app {
+      width:100vw; height:100vh;
+      display:flex; flex-direction:column; align-items:center;
+      position:relative; overflow:hidden;
+      background:radial-gradient(ellipse at 50% 5%, #122212 0%, #060f06 68%);
+    }
+
+    /* water lines */
+    #wbg { position:absolute; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+    .wl {
+      position:absolute; left:0; right:0; height:1px;
+      background:rgba(15,50,90,0.1);
+      animation:wm linear infinite;
+    }
+    @keyframes wm {
+      0%  { transform:translateX(-4%) scaleX(1.07); }
+      50% { transform:translateX(2%)  scaleX(0.96); }
+      100%{ transform:translateX(-4%) scaleX(1.07); }
+    }
+
+    .lily { position:absolute; border-radius:50%; background:#163016; opacity:0.14; pointer-events:none; z-index:0; }
+
+    /* header */
+    #header { width:100%; padding:50px 20px 8px; text-align:center; z-index:2; position:relative; }
+    #title { font-size:38px; font-weight:900; color:var(--glow); text-shadow:0 0 28px rgba(110,201,110,0.3); line-height:1; }
+    #subtitle { font-size:12px; color:var(--muted); margin-top:5px; letter-spacing:0.5px; }
+
+    /* pond */
+    #touch-area {
+      flex:1; width:calc(100% - 28px); margin:8px 14px 10px;
+      border-radius:28px; border:1px solid rgba(76,175,80,0.14);
+      background:rgba(4,12,30,0.65);
+      position:relative; overflow:hidden; touch-action:none;
+      display:flex; align-items:center; justify-content:center; z-index:2;
+    }
+
+    /* instruction */
+    #instruction {
+      display:flex; flex-direction:column; align-items:center;
+      text-align:center; pointer-events:none; z-index:3; padding:0 2rem;
+    }
+    #frog-idle { font-size:58px; margin-bottom:14px; animation:bob 2.6s ease-in-out infinite; }
+    @keyframes bob { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-9px) rotate(2deg)} }
+    #instruction p { font-size:15px; color:var(--muted); line-height:1.7; }
+
+    /* rhyme display */
+    #rhyme-box {
+      display:none; position:absolute; top:0; left:0; right:0;
+      padding:16px 20px 12px; text-align:center; z-index:20; pointer-events:none;
+      background:linear-gradient(to bottom, rgba(4,12,30,0.88) 55%, transparent);
+      border-radius:28px 28px 0 0;
+    }
+    #rhyme-word {
+      font-size:33px; font-weight:900; color:var(--glow);
+      text-shadow:0 0 16px rgba(110,201,110,0.38);
+      display:inline-block; animation:wp 0.18s ease-out;
+    }
+    @keyframes wp { 0%{transform:scale(1.3);opacity:0} 100%{transform:scale(1);opacity:1} }
+    #rhyme-sub { font-size:11px; color:rgba(255,255,255,0.2); margin-top:3px; letter-spacing:0.4px; }
+    #prog-wrap { margin-top:10px; height:2px; background:rgba(255,255,255,0.07); border-radius:2px; overflow:hidden; }
+    #prog { height:100%; background:var(--glow); width:0%; transition:width 0.15s linear; border-radius:2px; }
+
+    /* finger dots */
+    .fdot {
+      position:absolute; width:70px; height:70px; border-radius:50%;
+      transform:translate(-50%,-50%); pointer-events:none; z-index:5;
+    }
+    .fdot .core {
+      position:absolute; inset:0; border-radius:50%;
+      background:rgba(76,175,80,0.1);
+      border:1.5px solid rgba(76,175,80,0.32);
+      display:flex; align-items:center; justify-content:center; font-size:24px;
+      transition:background 0.15s, border-color 0.15s, transform 0.18s, box-shadow 0.18s;
+    }
+    .fdot .pr {
+      position:absolute; inset:0; border-radius:50%;
+      border:1px solid rgba(76,175,80,0.18);
+      animation:pr 2s ease-out infinite;
+    }
+    .fdot .pr2 { animation-delay:0.85s; }
+    @keyframes pr { 0%{transform:scale(1);opacity:0.4} 100%{transform:scale(1.85);opacity:0} }
+
+    /* active — clean ring highlight */
+    .fdot.active .core {
+      background:rgba(76,175,80,0.25);
+      border-color:var(--glow);
+      transform:scale(1.1);
+      box-shadow:0 0 16px rgba(110,201,110,0.35);
+    }
+    .fdot.active .pr,.fdot.active .pr2 { display:none; }
+
+    /* winner */
+    .fdot.winner {
+      transform:translate(-50%,-50%) scale(1.5) !important;
+      z-index:25; transition:transform 0.38s cubic-bezier(0.22,1,0.36,1);
+    }
+    .fdot.winner .core {
+      background:rgba(76,175,80,0.2); border-color:var(--glow); border-width:2px;
+      font-size:32px; box-shadow:0 0 28px rgba(110,201,110,0.55);
+      animation:winPop 0.4s cubic-bezier(0.22,1,0.36,1);
+    }
+    @keyframes winPop { 0%{transform:scale(0.25)} 65%{transform:scale(1.2)} 100%{transform:scale(1)} }
+    .fdot.winner .pr,.fdot.winner .pr2 {
+      border-color:rgba(110,201,110,0.3);
+      animation:pr 1.3s ease-out infinite;
+    }
+
+    /* loser */
+    .fdot.loser {
+      opacity:0.1; transition:all 0.32s ease;
+      transform:translate(-50%,-50%) scale(0.7) !important;
+    }
+
+    /* result */
+    #result-msg {
+      display:none; position:absolute; bottom:18px;
+      left:50%; transform:translateX(-50%);
+      font-size:26px; font-weight:900; color:var(--glow); white-space:nowrap;
+      text-shadow:0 0 20px rgba(110,201,110,0.4); z-index:30;
+      animation:fu 0.4s ease-out;
+    }
+    @keyframes fu { 0%{transform:translate(-50%,14px);opacity:0} 100%{transform:translate(-50%,0);opacity:1} }
+
+    /* falling frogs */
+    .cf { position:absolute; pointer-events:none; z-index:40; animation:ff linear forwards; }
+    @keyframes ff { 0%{transform:translateY(-40px) rotate(0deg);opacity:1} 80%{opacity:1} 100%{transform:translateY(108vh) rotate(460deg);opacity:0} }
+
+    /* bottom */
+    #bottom { width:100%; padding:0 14px 28px; display:flex; flex-direction:column; align-items:center; gap:8px; z-index:2; position:relative; }
+    #fcnt { font-size:14px; color:var(--muted); min-height:20px; letter-spacing:2px; }
+    #reset-btn {
+      display:none; width:100%; padding:15px; border-radius:18px; border:none;
+      background:var(--green); color:rgba(255,255,255,0.88);
+      font-family:'Noto Sans Malayalam',sans-serif; font-size:19px; font-weight:700; cursor:pointer;
+    }
+    #reset-btn:active { transform:scale(0.97); background:var(--bright); }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="wbg"></div>
+  <div class="lily" style="width:185px;height:185px;top:-68px;left:-72px;"></div>
+  <div class="lily" style="width:115px;height:115px;bottom:105px;right:-28px;"></div>
+  <div class="lily" style="width:62px;height:62px;bottom:235px;left:14px;"></div>
+
+  <div id="header">
+    <div id="title">🐸 തവളച്ചി</div>
+    <div id="subtitle">അതല പിതല തവളച്ചി...</div>
+  </div>
+
+  <div id="touch-area">
+    <div id="rhyme-box">
+      <div id="rhyme-word"></div>
+      <div id="rhyme-sub"></div>
+      <div id="prog-wrap"><div id="prog"></div></div>
+    </div>
+    <div id="instruction">
+      <div id="frog-idle">🐸</div>
+      <p>എല്ലാവരും വിരൽ വയ്ക്കൂ</p>
+    </div>
+    <div id="result-msg"></div>
+  </div>
+
+  <div id="bottom">
+    <div id="fcnt"></div>
+    <button id="reset-btn" onclick="reset()">🔄 വീണ്ടും</button>
+  </div>
+</div>
+
+<script>
+// water bg
+const wb = document.getElementById('wbg');
+for (let i = 0; i < 16; i++) {
+  const d = document.createElement('div');
+  d.className = 'wl';
+  d.style.top = (i * 6.2 + 2) + '%';
+  d.style.animationDuration = (7 + Math.random() * 8) + 's';
+  d.style.animationDelay = (-Math.random() * 8) + 's';
+  wb.appendChild(d);
+}
+
+const RHYME = [
+  { ml:'അതല',        en:'athala' },
+  { ml:'പിതല',       en:'pithala' },
+  { ml:'തവളച്ചി',    en:'thavalachi' },
+  { ml:'ചുക്ക്',     en:'chukku' },
+  { ml:'മേലിരിക്കന', en:'melirikkana' },
+  { ml:'ചൂലാപ്പ്',   en:'choolaappu' },
+  { ml:'മറിയം',      en:'mariyam' },
+  { ml:'വന്നു',      en:'vannu' },
+  { ml:'വിളക്കൂതി',  en:'vilakkoothi' },
+  { ml:'ഗുണ്ട്',     en:'gundu' },
+  { ml:'സാറ',        en:'saaraa' },
+  { ml:'മണി',        en:'mani' },
+  { ml:'ഗോ!',        en:'go!' },
+];
+
+const MELODY = [330,370,415,466,523,466,415,466,523,587,523,466,659];
+
+let audioCtx = null;
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function note(freq, t, dur=0.11, vol=0.12, type='triangle') {
+  try {
+    const c = getCtx();
+    const o = c.createOscillator(), g = c.createGain();
+    o.connect(g); g.connect(c.destination);
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.start(t); o.stop(t + dur + 0.04);
+  } catch(e){}
+}
+function playWord(idx, isLast) {
+  const c = getCtx(), now = c.currentTime;
+  if (isLast) {
+    [523,659,784,1047].forEach((f,i) => note(f, now + i*0.09, 0.26, 0.14, 'sine'));
+  } else {
+    const f = MELODY[idx % MELODY.length];
+    note(f, now, 0.11, 0.12, 'triangle');
+    note(f/2, now, 0.07, 0.05, 'sine');
+  }
+}
+function playWin() {
+  const c = getCtx(), now = c.currentTime;
+  [523,659,784,659,784,1047].forEach((f,i) => note(f, now + i*0.12, 0.2, 0.14, 'sine'));
+}
+
+const touchArea   = document.getElementById('touch-area');
+const instruction = document.getElementById('instruction');
+const rhymeBox    = document.getElementById('rhyme-box');
+const rhymeWordEl = document.getElementById('rhyme-word');
+const rhymeSubEl  = document.getElementById('rhyme-sub');
+const progEl      = document.getElementById('prog');
+const resultMsg   = document.getElementById('result-msg');
+const resetBtn    = document.getElementById('reset-btn');
+const fcnt        = document.getElementById('fcnt');
+
+let dots = {}, phase = 'waiting', holdTimer = null, chantTimer = null;
+
+function getPos(t) {
+  const r = touchArea.getBoundingClientRect();
+  return { x: t.clientX - r.left, y: t.clientY - r.top };
+}
+function makeDot(id, pos) {
+  const el = document.createElement('div');
+  el.className = 'fdot'; el.id = 'fd-' + id;
+  el.innerHTML = `<div class="pr"></div><div class="pr pr2"></div><div class="core">🐸</div>`;
+  touchArea.appendChild(el);
+  dots[id] = { el };
+  moveDot(id, pos);
+}
+function moveDot(id, pos) {
+  if (!dots[id]) return;
+  dots[id].el.style.left = pos.x + 'px';
+  dots[id].el.style.top  = pos.y + 'px';
+}
+function removeDot(id) {
+  if (dots[id]) { dots[id].el.remove(); delete dots[id]; }
+}
+function clearAll() {
+  Object.keys(dots).forEach(id => { dots[id].el.remove(); delete dots[id]; });
+}
+function setActive(id) {
+  Object.keys(dots).forEach(d => dots[d].el.classList.remove('active'));
+  if (id != null && dots[id]) dots[id].el.classList.add('active');
+}
+function updateCount() {
+  const n = Object.keys(dots).length;
+  fcnt.textContent = n > 0 ? '🐸'.repeat(Math.min(n, 8)) : '';
+}
+
+function startChanting() {
+  if (phase !== 'holding' || !Object.keys(dots).length) return;
+  phase = 'chanting';
+  instruction.style.display = 'none';
+  rhymeBox.style.display = 'block';
+
+  let wi = 0, fi = Math.floor(Math.random() * Object.keys(dots).length);
+
+  function next() {
+    if (phase !== 'chanting') return;
+    const ids = Object.keys(dots);
+    if (!ids.length) { reset(); return; }
+    fi = fi % ids.length;
+    const cid = ids[fi];
+    const isLast = wi === RHYME.length - 1;
+
+    rhymeWordEl.textContent = RHYME[wi].ml;
+    rhymeSubEl.textContent  = RHYME[wi].en;
+    rhymeWordEl.style.animation = 'none';
+    void rhymeWordEl.offsetWidth;
+    rhymeWordEl.style.animation = 'wp 0.18s ease-out';
+    progEl.style.width = ((wi + 1) / RHYME.length * 100) + '%';
+
+    setActive(cid);
+    playWord(wi, isLast);
+
+    if (isLast) { setTimeout(() => pickWinner(cid), 560); return; }
+
+    wi++;
+    fi = (fi + 1) % ids.length;
+    chantTimer = setTimeout(next, Math.max(255, 420 - wi * 13));
+  }
+  next();
+}
+
+function pickWinner(wid) {
+  phase = 'done';
+  rhymeBox.style.display = 'none';
+  Object.keys(dots).forEach(id => {
+    dots[id].el.querySelectorAll('.pr').forEach(p => p.remove());
+    dots[id].el.classList.remove('active');
+    dots[id].el.classList.add(id === wid ? 'winner' : 'loser');
+  });
+  playWin();
+  spawnFrogs();
+  resultMsg.style.display = 'block';
+  resultMsg.textContent = 'ക്രോക്! ക്രോക്! 🐸';
+  fcnt.textContent = '';
+  resetBtn.style.display = 'block';
+}
+
+function spawnFrogs() {
+  const items = ['🐸','🐸','🐸','🌿','💧'];
+  for (let i = 0; i < 18; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'cf';
+      el.textContent = items[Math.floor(Math.random() * items.length)];
+      el.style.cssText = `left:${Math.random()*93}%;top:-40px;font-size:${14+Math.random()*22}px`;
+      const dur = 1.7 + Math.random() * 1.5;
+      el.style.animationDuration = dur + 's';
+      document.getElementById('app').appendChild(el);
+      setTimeout(() => el.remove(), dur * 1000 + 150);
+    }, i * 58);
+  }
+}
+
+function reset() {
+  clearTimeout(holdTimer); clearTimeout(chantTimer);
+  clearAll(); phase = 'waiting';
+  instruction.style.display = 'flex';
+  rhymeBox.style.display = 'none';
+  resultMsg.style.display = 'none';
+  resetBtn.style.display = 'none';
+  fcnt.textContent = '';
+  progEl.style.width = '0%';
+  document.querySelectorAll('.cf').forEach(e => e.remove());
+}
+
+touchArea.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (phase === 'done') return;
+  Array.from(e.changedTouches).forEach(t => { if (!dots[t.identifier]) makeDot(t.identifier, getPos(t)); });
+  updateCount();
+  if (phase !== 'chanting') {
+    phase = 'holding';
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(() => { if (phase === 'holding' && Object.keys(dots).length) startChanting(); }, 650);
+  }
+}, { passive:false });
+
+touchArea.addEventListener('touchmove', e => {
+  e.preventDefault();
+  // always track — even during chant
+  Array.from(e.changedTouches).forEach(t => moveDot(t.identifier, getPos(t)));
+}, { passive:false });
+
+touchArea.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (phase === 'done') return;
+  if (phase === 'chanting') {
+    Array.from(e.changedTouches).forEach(t => removeDot(t.identifier));
+    if (!Object.keys(dots).length) reset();
+    return;
+  }
+  clearTimeout(holdTimer);
+  Array.from(e.changedTouches).forEach(t => removeDot(t.identifier));
+  updateCount();
+  if (!Object.keys(dots).length) { phase = 'waiting'; }
+  else { holdTimer = setTimeout(() => { if (phase === 'holding' && Object.keys(dots).length) startChanting(); }, 650); }
+}, { passive:false });
+
+touchArea.addEventListener('touchcancel', e => {
+  e.preventDefault();
+  Array.from(e.changedTouches).forEach(t => removeDot(t.identifier));
+  updateCount();
+}, { passive:false });
+</script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+</body>
+</html>
